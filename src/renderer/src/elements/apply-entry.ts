@@ -12,6 +12,12 @@ export function applyElementEntry(
     const kept = page.filter((e) => e.id !== element.id)
     return remove ? kept : [...kept, element]
   }
+  if (entry.value === 'add-batch') {
+    const { elements } = entry.payload
+    const ids = new Set(elements.map((e) => e.id))
+    const kept = page.filter((e) => !ids.has(e.id))
+    return direction === 'undo' ? kept : [...kept, ...elements]
+  }
   if (entry.value === 'move' || entry.value === 'mark' || entry.value === 'edit') {
     const target = direction === 'undo' ? entry.payload.before : entry.payload.after
     return page.map((e) => (e.id === target.id ? target : e))

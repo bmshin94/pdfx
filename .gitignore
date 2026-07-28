@@ -13,6 +13,7 @@ native/build/
 # Secrets / credentials — never commit these.
 .env
 .env.*
+.dev.vars
 *.pem
 *.key
 *.p12

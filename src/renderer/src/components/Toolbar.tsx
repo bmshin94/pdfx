@@ -1,18 +1,20 @@
 import { isWeb } from '../platform/web/install'
 import { useGitHubStars } from '../app/useGitHubStars'
-import { GitHubIcon } from './icons'
+import { BoltIcon, GitHubIcon } from './icons'
 
 interface ToolbarProps {
   documentCount: number
   pageCount: number
   busy: boolean
   zoom: number
+  aiOpen: boolean
   onZoomIn: () => void
   onZoomOut: () => void
   onZoomReset: () => void
   onOpen: () => void
   onExportPdf: () => void
   onExportZip: () => void
+  onToggleAi: () => void
 }
 
 const isMac = window.api.platform === 'darwin'
@@ -22,12 +24,14 @@ export function Toolbar({
   pageCount,
   busy,
   zoom,
+  aiOpen,
   onZoomIn,
   onZoomOut,
   onZoomReset,
   onOpen,
   onExportPdf,
-  onExportZip
+  onExportZip,
+  onToggleAi
 }: ToolbarProps): React.JSX.Element {
   const stars = useGitHubStars(isWeb ? 'AlexandrosGounis/pdfx' : null)
   return (
@@ -96,6 +100,13 @@ export function Toolbar({
           {stars && <span className="star-count">{stars}</span>}
         </a>
       )}
+      <button
+        className={`btn glass square ai-btn${aiOpen ? ' active' : ''}`}
+        title="AI assistant"
+        onClick={onToggleAi}
+      >
+        <BoltIcon size={18} />
+      </button>
     </header>
   )
 }

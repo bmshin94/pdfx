@@ -6,6 +6,7 @@ import type { Segment } from './emit'
 import { formatNumber, segmentsToTj, spliceEdits } from './emit'
 import type { Edit } from './emit'
 import { TextState } from './text-state'
+import type { FillColor } from './text-state'
 import { applyStateOp } from './state-ops'
 import { scrubShownText } from './show-text'
 import type { ShowTextOutcome } from './show-text'
@@ -13,11 +14,18 @@ import { MarkedContentTracker } from './marked-content'
 import { inlineImageFailure, xobjectFailure } from './xobjects'
 import type { XObjectInfo } from './xobjects'
 
+export interface RemovedGlyphInfo {
+  box: Box
+  color: FillColor | null
+  capHeightPts: number | null
+}
+
 export interface ScrubOptions {
   fonts: Map<string, FontWidths | null>
   xobjects: Map<string, XObjectInfo>
   hiddenProps: Set<string>
   rects: Box[]
+  onRemovedGlyph?: (glyph: RemovedGlyphInfo) => void
 }
 
 export type ScrubResult =
@@ -35,9 +43,16 @@ export function scrubContent(data: Uint8Array, opts: ScrubOptions): ScrubResult 
   const marked = new MarkedContentTracker(opts.hiddenProps)
   const edits: Edit[] = []
   let removed = 0
-  const onGlyphRemoved = (): void => {
+  const onGlyphRemoved = (box: Box): void => {
     removed++
     marked.markDirty()
+    opts.onRemovedGlyph?.({
+      box,
+      color: state.fillColor,
+      capHeightPts: state.font?.capHeight
+        ? (state.font.capHeight / 1000) * state.size * state.verticalScale()
+        : null
+    })
   }
   const show = (bytes: Uint8Array, segments: Segment[]): ShowTextOutcome =>
     scrubShownText(state, opts.rects, bytes, segments, onGlyphRemoved)

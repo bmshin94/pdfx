@@ -1,0 +1,16 @@
+# Copy to .dev.vars and fill in. Loaded into the renderer by the DEV servers only —
+# API keys are never baked into production builds (yarn build / build:web).
+# Only referenced keys are injected; .dev.vars is gitignored — never commit it.
+# Restart the dev server after editing — values are read at startup.
+
+# Which provider the assistant uses: "anthropic" (default), "openai", or "google".
+PDFX_AI_PROVIDER=anthropic
+
+# Model id for the chosen provider. Defaults per provider when omitted
+# (anthropic: claude-opus-4-8, openai: gpt-5.2, google: gemini-3.1-flash).
+PDFX_AI_MODEL=
+
+# Provider API keys — set the one matching PDFX_AI_PROVIDER.
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+GOOGLE_GENERATIVE_AI_API_KEY=

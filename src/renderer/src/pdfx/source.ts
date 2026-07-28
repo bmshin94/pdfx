@@ -22,8 +22,14 @@ const WASM_URL = import.meta.env.VITE_PDFX_WEB
   ? new URL('/pdf/', location.href).href
   : 'pdfx-assets://pdf/'
 
+const STANDARD_FONT_URL = `${WASM_URL}standard_fonts/`
+
 export async function loadSource(bytes: Uint8Array): Promise<LoadedSource> {
-  const pdf = await getDocument({ data: bytes.slice(), wasmUrl: WASM_URL }).promise
+  const pdf = await getDocument({
+    data: bytes.slice(),
+    wasmUrl: WASM_URL,
+    standardFontDataUrl: STANDARD_FONT_URL
+  }).promise
   if (pdf.numPages > MAX_PAGES) {
     throw new Error(`PDF declares ${pdf.numPages} pages; refusing to load more than ${MAX_PAGES}`)
   }
@@ -74,7 +80,8 @@ export const toExportPage = (
 })
 
 export const openPdf = (bytes: Uint8Array): Promise<PDFDocumentProxy> =>
-  getDocument({ data: bytes.slice(), wasmUrl: WASM_URL }).promise
+  getDocument({ data: bytes.slice(), wasmUrl: WASM_URL, standardFontDataUrl: STANDARD_FONT_URL })
+    .promise
 
 export async function loadIncomingPages(
   files: { name: string; data: Uint8Array; path?: string }[],

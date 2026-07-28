@@ -1,8 +1,9 @@
 import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import { devVarsDefine } from './dev-vars'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   main: {
     plugins: [externalizeDepsPlugin()],
     build: {
@@ -17,15 +18,28 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
+    define: devVarsDefine(__dirname, command),
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
-        'tesseract.js': 'tesseract.js/dist/tesseract.esm.min.js'
+        'tesseract.js': 'tesseract.js'
       }
+    },
+    optimizeDeps: {
+      include: [
+        'ai',
+        'ai/test',
+        '@ai-sdk/anthropic',
+        '@ai-sdk/openai',
+        '@ai-sdk/google',
+        'zod',
+        'pdfjs-dist/build/pdf.worker.min.mjs',
+        'tesseract.js'
+      ]
     },
     worker: {
       format: 'es'
     },
     plugins: [react()]
   }
-})
+}))

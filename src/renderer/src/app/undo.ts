@@ -1,11 +1,13 @@
 import { useCallback, useRef } from 'react'
 import type { Mark, MarkMap } from '../edit/types'
 import type { PageElement } from '../elements/types'
+import type { PdfSource } from '../types'
 
 export const ACTIONS = {
   MARK: 'mark',
   MOVE_PAGE: 'move-page',
-  ELEMENT: 'element'
+  ELEMENT: 'element',
+  PAGE_SOURCE: 'page-source'
 } as const
 
 export interface PagePlacement {
@@ -47,11 +49,27 @@ export type ElementUndoEntry =
     }
   | {
       action: typeof ACTIONS.ELEMENT
+      value: 'add-batch'
+      payload: { pageId: string; elements: PageElement[] }
+    }
+  | {
+      action: typeof ACTIONS.ELEMENT
       value: 'move' | 'mark' | 'edit'
       payload: { pageId: string; before: PageElement; after: PageElement }
     }
 
-export type UndoEntry = MarkUndoEntry | MovePageUndoEntry | ElementUndoEntry
+export interface PageSourceSwap {
+  source: PdfSource
+  pageIndex: number
+}
+
+export type PageSourceUndoEntry = {
+  action: typeof ACTIONS.PAGE_SOURCE
+  value: string
+  payload: { pageId: string; before: PageSourceSwap; after: PageSourceSwap }
+}
+
+export type UndoEntry = MarkUndoEntry | MovePageUndoEntry | ElementUndoEntry | PageSourceUndoEntry
 
 const UNDO_CAP = 30
 

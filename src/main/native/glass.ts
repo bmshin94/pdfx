@@ -4,11 +4,17 @@ import { join } from 'path'
 const isMac = process.platform === 'darwin'
 
 export const FALLBACK_BG = { dark: '#1c1c1e', light: '#f7f7f5' }
+const TOOLBAR_HEIGHT = 64
+const TRAFFIC_LIGHT_HEIGHT = 13.5
+const TRAFFIC_LIGHT_LEFT = 20
 
 export const GLASS_CONFIG = isMac
   ? {
       titleBarStyle: 'hidden' as const,
-      trafficLightPosition: { x: 20, y: 19 },
+      trafficLightPosition: {
+        x: TRAFFIC_LIGHT_LEFT,
+        y: (TOOLBAR_HEIGHT - TRAFFIC_LIGHT_HEIGHT) / 2
+      },
       transparent: true,
       backgroundColor: '#00000000',
       roundedCorners: true

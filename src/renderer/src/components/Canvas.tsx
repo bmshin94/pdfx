@@ -40,6 +40,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
   const worldRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const userMovedRef = useRef(false)
+  const hadContentRef = useRef(false)
   const dims = useRef({ contentWidth, contentHeight, slotHeight })
   dims.current = { contentWidth, contentHeight, slotHeight }
   const draggingRef = useRef(dragging)
@@ -69,9 +70,11 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
       [-mx, -my],
       [contentWidth + mx, contentHeight + my]
     ])
-    if (!userMovedRef.current && !draggingRef.current && contentWidth > 1 && contentHeight > 1) {
+    const hasContent = contentWidth > 1 && contentHeight > 1
+    if (hasContent && !hadContentRef.current && !draggingRef.current) {
       select(vp).call(zoomBehavior.transform, fitTransform())
     }
+    hadContentRef.current = hasContent
   }, [contentWidth, contentHeight])
 
   useImperativeHandle(ref, () => createCanvasHandle({ viewportRef, zoomRef, fitTransform }))

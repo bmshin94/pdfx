@@ -42,6 +42,39 @@ export function useElements(pushUndo: (entry: UndoEntry) => void) {
     [addElement]
   )
 
+  const addTexts = useCallback(
+    (
+      pageId: string,
+      items: { text: string; origin: ElementPoint; fontSize?: number }[],
+      pageWidth: number,
+      pageHeight: number
+    ): PageElement[] => {
+      const created: PageElement[] = []
+      for (const item of items) {
+        const element = createTextElement(
+          item.text,
+          item.origin,
+          nextNumberRef.current,
+          pageWidth,
+          pageHeight,
+          item.fontSize
+        )
+        if (!element) continue
+        nextNumberRef.current += 1
+        created.push(element)
+      }
+      if (created.length === 0) return created
+      pushUndo({
+        action: ACTIONS.ELEMENT,
+        value: 'add-batch',
+        payload: { pageId, elements: created }
+      })
+      setElements((map) => ({ ...map, [pageId]: [...(map[pageId] ?? []), ...created] }))
+      return created
+    },
+    [pushUndo]
+  )
+
   const removeElement = useCallback(
     (pageId: string, elementId: string) => {
       const map = elementsRef.current
@@ -125,6 +158,7 @@ export function useElements(pushUndo: (entry: UndoEntry) => void) {
     elements,
     addInk,
     addText,
+    addTexts,
     removeElement,
     moveElement,
     toggleTextMark,

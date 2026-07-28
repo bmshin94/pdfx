@@ -13,6 +13,7 @@ import {
   stripHiddenProps
 } from './page-resources'
 import { scrubContent } from './scrub'
+import type { ScrubOptions } from './scrub'
 
 class Unsupported extends Error {}
 
@@ -20,13 +21,19 @@ const fail = (reason: string): never => {
   throw new Unsupported(reason)
 }
 
+export interface RedactPageOptions {
+  allowAnnotations?: boolean
+  onRemovedGlyph?: ScrubOptions['onRemovedGlyph']
+}
+
 export async function buildRedactedSourcePage(
   entry: PageEntry,
   marks: Mark[],
-  filledBytes?: Uint8Array
+  filledBytes?: Uint8Array,
+  options: RedactPageOptions = {}
 ): Promise<SourceExportPage | null> {
   try {
-    return await attempt(entry, marks, filledBytes)
+    return await attempt(entry, marks, filledBytes, options)
   } catch (error) {
     const reason = error instanceof Unsupported ? error.message : String(error)
     console.warn(`[pdfx] surgical redaction fell back to raster: ${reason}`)
@@ -37,7 +44,8 @@ export async function buildRedactedSourcePage(
 async function attempt(
   entry: PageEntry,
   marks: Mark[],
-  filledBytes?: Uint8Array
+  filledBytes: Uint8Array | undefined,
+  options: RedactPageOptions
 ): Promise<SourceExportPage | null> {
   const source = await PDFDocument.load(filledBytes ?? entry.source.bytes, {
     ignoreEncryption: true
@@ -55,7 +63,9 @@ async function attempt(
   if (rects.length === 0) return fail('no redaction rects')
 
   const context = temp.context
-  if (annotsIntersect(context, page, rects)) return fail('annotation overlaps redaction')
+  if (!options.allowAnnotations && annotsIntersect(context, page, rects)) {
+    return fail('annotation overlaps redaction')
+  }
 
   const content = readContent(context, page)
   if (!content) return fail('unreadable content stream')
@@ -67,7 +77,8 @@ async function attempt(
     fonts: parseFonts(context, resources),
     xobjects: parseXObjects(context, resources),
     hiddenProps: collectHiddenProps(context, resources),
-    rects
+    rects,
+    onRemovedGlyph: options.onRemovedGlyph
   })
   if (!result.ok) return fail(result.reason)
   if (result.removed === 0) return fail('no glyphs found under redaction')

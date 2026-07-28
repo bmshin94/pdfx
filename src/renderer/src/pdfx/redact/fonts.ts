@@ -5,6 +5,7 @@ import { asArray, asDict, asNumber, asName } from './lookup'
 export interface FontWidths {
   bytesPerCode: 1 | 2
   spaceCode: number | null
+  capHeight: number | null
   widthOf: (code: number) => number
 }
 
@@ -23,6 +24,7 @@ function parseSimpleFont(context: PDFContext, dict: PDFDict): FontWidths | null 
   return {
     bytesPerCode: 1,
     spaceCode: 32,
+    capHeight: asNumber(context, descriptor?.get(name('CapHeight'))) ?? null,
     widthOf: (code) => {
       const index = code - firstChar
       return index >= 0 && index < widths.length ? widths[index] : missing
@@ -60,9 +62,11 @@ function parseType0Font(context: PDFContext, dict: PDFDict): FontWidths | null {
       }
     }
   }
+  const descriptor = asDict(context, cidFont.get(name('FontDescriptor')))
   return {
     bytesPerCode: 2,
     spaceCode: null,
+    capHeight: asNumber(context, descriptor?.get(name('CapHeight'))) ?? null,
     widthOf: (code) => widths.get(code) ?? defaultWidth
   }
 }

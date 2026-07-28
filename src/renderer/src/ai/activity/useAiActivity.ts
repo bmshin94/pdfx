@@ -6,7 +6,7 @@ interface PageTouch {
   pending: number
 }
 
-const FLASH_MS = 700
+const FLASH_MS = 800
 
 export function useAiActivity() {
   const [activePageIds, setActivePageIds] = useState<ReadonlySet<string>>(() => new Set())

@@ -38,12 +38,17 @@ export function devVarsDefine(rootDir: string, command: 'serve' | 'build'): Reco
   const file = resolve(rootDir, '.dev.vars')
   const vars = existsSync(file) ? parse(readFileSync(file, 'utf8')) : {}
   const define: Record<string, string> = {}
+  const embed = process.env.PDFX_EMBED_AI_KEYS === '1'
   for (const key of FORWARDED_KEYS) {
     const secret = key.endsWith(SECRET_SUFFIX)
-    const omit = command === 'build' && secret
+    const omit = command === 'build' && secret && !embed
     define[`import.meta.env.${key}`] = JSON.stringify(omit ? '' : (vars[key] ?? ''))
-    if (omit && (vars[key] ?? '').length > 0) {
-      console.warn(`[dev-vars] ${key} is set in .dev.vars but is never baked into builds.`)
+    if (secret && command === 'build' && (vars[key] ?? '').length > 0) {
+      console.warn(
+        embed
+          ? `[dev-vars] PDFX_EMBED_AI_KEYS=1 — baking ${key} into this build; do NOT distribute it.`
+          : `[dev-vars] ${key} is set in .dev.vars but is never baked into builds.`
+      )
     }
   }
   return define

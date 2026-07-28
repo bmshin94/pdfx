@@ -1904,15 +1904,16 @@ rect.element-hit {
   pointer-events: none;
   border-radius: inherit;
   background: #fff;
-  box-shadow: 0 0 44px rgba(255, 255, 255, 0.9);
-  animation: ai-flash 0.5s ease-out forwards;
+  box-shadow: 0 0 66px rgba(255, 255, 255, 1);
+  animation: ai-flash 0.575s ease-out forwards;
 }
 
 @keyframes ai-flash {
-  from {
-    opacity: 0.95;
+  0%,
+  15% {
+    opacity: 1;
   }
-  to {
+  100% {
     opacity: 0;
   }
 }

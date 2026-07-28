@@ -1,5 +1,6 @@
 # Copy to .dev.vars and fill in. Loaded into the renderer by the DEV servers only —
-# API keys are never baked into production builds (yarn build / build:web).
+# API keys are never baked into production builds (yarn build / build:web), unless you
+# explicitly opt in with PDFX_EMBED_AI_KEYS=1 for a personal build — never distribute those.
 # Only referenced keys are injected; .dev.vars is gitignored — never commit it.
 # Restart the dev server after editing — values are read at startup.
 

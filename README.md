@@ -6,12 +6,8 @@
 
 <br>
 
-<a href="https://pub-2f99e567a5f04aefb5e8cb75acb90ef7.r2.dev/PDFx.zip">
-  <img src="https://img.shields.io/badge/Download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="44">
-</a>&nbsp;
-<a href="https://pdfx.zip">
-  <img src="https://img.shields.io/badge/Live Demo-4285F4?style=for-the-badge&logo=google chrome&logoColor=white" alt="Download" height="44">
-</a>
+[![Download](https://img.shields.io/badge/Download-000000?style=for-the-badge&logo=apple&logoColor=white)](https://pub-2f99e567a5f04aefb5e8cb75acb90ef7.r2.dev/PDFx.zip)&nbsp;
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-4285F4?style=for-the-badge&logo=google%20chrome&logoColor=white)](https://pdfx.zip)
 <br>
 <br>
 

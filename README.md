@@ -6,12 +6,12 @@
 
 <br>
 
-Web Demo: [https://pdfx.zip](https://pdfx.zip)
-
 <a href="https://pub-2f99e567a5f04aefb5e8cb75acb90ef7.r2.dev/PDFx.zip">
   <img src="https://img.shields.io/badge/Download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="44">
+</a>&nbsp;
+<a href="https://pdfx.zip">
+  <img src="https://img.shields.io/badge/Live Demo-4285F4?style=for-the-badge&logo=google chrome&logoColor=white" alt="Download" height="44">
 </a>
-
 <br>
 <br>
 
@@ -50,7 +50,7 @@ yarn dev:web      # run on the web
 yarn build:mac    # build:win for windows, build:linux for linux
 ```
 
-*Linux packaging notes (formats, Flatpak, prerequisites) live in [docs/LINUX_SETUP.md](docs/LINUX_SETUP.md).*
+_The AI assistant needs a provider API key: copy `.dev.vars.example` to `.dev.vars`, and set your key (Google, Anthropic, or OpenAI)._
 
 ## License
 

@@ -5,6 +5,8 @@ import type { FontWidths } from './fonts'
 const ASCENT = 0.9
 const DESCENT = -0.22
 
+export type FillColor = [number, number, number]
+
 export class TextState {
   ctm: Matrix = IDENTITY
   tm: Matrix = IDENTITY
@@ -17,14 +19,17 @@ export class TextState {
   hscale = 1
   leading = 0
   rise = 0
-  private saved: Matrix[] = []
+  fillColor: FillColor | null = null
+  private saved: { ctm: Matrix; fillColor: FillColor | null }[] = []
 
   save(): void {
-    this.saved.push(this.ctm)
+    this.saved.push({ ctm: this.ctm, fillColor: this.fillColor })
   }
 
   restore(): void {
-    this.ctm = this.saved.pop() ?? IDENTITY
+    const prev = this.saved.pop()
+    this.ctm = prev?.ctm ?? IDENTITY
+    this.fillColor = prev ? prev.fillColor : null
   }
 
   concat(m: Matrix): void {
@@ -86,5 +91,10 @@ export class TextState {
       Math.max(advance, 1e-6),
       this.rise + ASCENT * this.size
     )
+  }
+
+  verticalScale(): number {
+    const m = multiply(this.tm, this.ctm)
+    return Math.hypot(m[2], m[3])
   }
 }

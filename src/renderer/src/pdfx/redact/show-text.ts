@@ -15,7 +15,7 @@ export function scrubShownText(
   rects: Box[],
   bytes: Uint8Array,
   segments: Segment[],
-  onGlyphRemoved: () => void
+  onGlyphRemoved: (box: Box) => void
 ): ShowTextOutcome {
   const font = state.font
   if (!font) return { changed: false, unsupported: `unsupported font /${state.fontName}` }
@@ -25,12 +25,13 @@ export function scrubShownText(
   for (let i = 0; i + step <= bytes.length; i += step) {
     const code = step === 2 ? (bytes[i] << 8) | bytes[i + 1] : bytes[i]
     const advance = state.glyphAdvance(code)
-    const covered = coveredFraction(state.glyphBox(advance), rects)
+    const box = state.glyphBox(advance)
+    const covered = coveredFraction(box, rects)
     if (covered >= GLYPH_OVERLAP) {
       if (run.length > 0) segments.push({ kind: 'run', bytes: run })
       run = []
       segments.push({ kind: 'adj', value: -state.glyphAdjustment(code) })
-      onGlyphRemoved()
+      onGlyphRemoved(box)
       changed = true
     } else {
       for (let k = 0; k < step; k++) run.push(bytes[i + k])

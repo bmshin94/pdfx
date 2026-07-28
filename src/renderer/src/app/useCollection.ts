@@ -4,10 +4,10 @@ import * as pageOps from './doc-ops/pages'
 import * as moveOps from './doc-ops/move'
 import { useClipboard } from './useClipboard'
 import { ACTIONS } from './undo'
-import type { PagePlacement, UndoEntry } from './undo'
+import type { PagePlacement, PageSourceUndoEntry, UndoEntry } from './undo'
 import type { SelectedTarget } from './selection'
 import type { PageRef } from './types'
-import type { DocEntry, PageEntry } from '../types'
+import type { DocEntry, PageEntry, PdfSource } from '../types'
 
 export function useCollection(
   flash: (message: string) => void,
@@ -45,20 +45,17 @@ export function useCollection(
     setDocs((prev) => docOps.reorderDoc(prev, id, direction))
   }, [])
 
-  const deletePage = useCallback(
-    (target: PageRef) => {
-      const doc = docs.find((d) => d.id === target.docId)
-      const index = doc?.pages.findIndex((p) => p.id === target.pageId) ?? -1
-      if (!doc || index === -1) return
-      const pages = doc.pages.filter((p) => p.id !== target.pageId)
-      const neighbor = pages[Math.min(index, pages.length - 1)]
-      setDocs((prev) =>
-        prev.map((d) => (d.id === doc.id ? { ...d, pages } : d)).filter((d) => d.pages.length > 0)
-      )
-      setSelected(neighbor ? { docId: doc.id, pageId: neighbor.id } : null)
-    },
-    [docs]
-  )
+  const deletePage = useCallback((target: PageRef) => {
+    const doc = docsRef.current.find((d) => d.id === target.docId)
+    const index = doc?.pages.findIndex((p) => p.id === target.pageId) ?? -1
+    if (!doc || index === -1) return
+    const pages = doc.pages.filter((p) => p.id !== target.pageId)
+    const neighbor = pages[Math.min(index, pages.length - 1)]
+    setDocs((prev) =>
+      prev.map((d) => (d.id === doc.id ? { ...d, pages } : d)).filter((d) => d.pages.length > 0)
+    )
+    setSelected(neighbor ? { docId: doc.id, pageId: neighbor.id } : null)
+  }, [])
 
   const insertPagesAfter = useCallback((target: SelectedTarget, entries: PageEntry[]) => {
     if (entries.length === 0) return
@@ -122,6 +119,29 @@ export function useCollection(
     setSelected({ docId: at.docId, pageId })
   }, [])
 
+  const replacePageSource = useCallback(
+    (pageId: string, source: PdfSource, pageIndex: number) => {
+      const page = docsRef.current.flatMap((d) => d.pages).find((p) => p.id === pageId)
+      if (!page) return
+      pushUndo({
+        action: ACTIONS.PAGE_SOURCE,
+        value: pageId,
+        payload: {
+          pageId,
+          before: { source: page.source, pageIndex: page.pageIndex },
+          after: { source, pageIndex }
+        }
+      })
+      setDocs((prev) => pageOps.swapPageSource(prev, pageId, { source, pageIndex }))
+    },
+    [pushUndo]
+  )
+
+  const applyPageSource = useCallback((entry: PageSourceUndoEntry, direction: 'undo' | 'redo') => {
+    const swap = direction === 'undo' ? entry.payload.before : entry.payload.after
+    setDocs((prev) => pageOps.swapPageSource(prev, entry.payload.pageId, swap))
+  }, [])
+
   const spliceDocsAfter = useCallback((anchorDocId: string | null, newDocs: DocEntry[]) => {
     if (newDocs.length === 0) return
     setDocs((prev) => docOps.spliceDocsAfter(prev, anchorDocId, newDocs))
@@ -149,6 +169,8 @@ export function useCollection(
     movePageInto,
     movePageToNewDoc,
     placePageAt,
+    replacePageSource,
+    applyPageSource,
     spliceDocsAfter
   }
 }

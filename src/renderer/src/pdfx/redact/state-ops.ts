@@ -49,7 +49,37 @@ export function applyStateOp(state: TextState, op: string, operands: Operand[]):
     case 'Ts':
       if (operands.length === 1) state.rise = n[0] || 0
       return true
+    case 'rg':
+      state.fillColor = validNums(3) ? [n[0], n[1], n[2]] : null
+      return true
+    case 'g':
+      state.fillColor = validNums(1) ? [n[0], n[0], n[0]] : null
+      return true
+    case 'k':
+      state.fillColor = validNums(4) ? cmykToRgb(n) : null
+      return true
+    case 'sc':
+    case 'scn':
+      state.fillColor = numericFill(operands, n)
+      return true
+    case 'cs':
+      state.fillColor = [0, 0, 0]
+      return true
     default:
       return false
   }
+}
+
+const cmykToRgb = (n: number[]): [number, number, number] => [
+  (1 - n[0]) * (1 - n[3]),
+  (1 - n[1]) * (1 - n[3]),
+  (1 - n[2]) * (1 - n[3])
+]
+
+function numericFill(operands: Operand[], n: number[]): [number, number, number] | null {
+  if (n.some(Number.isNaN)) return null
+  if (operands.length === 1) return [n[0], n[0], n[0]]
+  if (operands.length === 3) return [n[0], n[1], n[2]]
+  if (operands.length === 4) return cmykToRgb(n)
+  return null
 }

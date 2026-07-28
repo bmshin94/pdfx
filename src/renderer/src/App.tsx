@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { computeLayout } from './canvas/layout'
 import { Toolbar } from './components/Toolbar'
 import { FullView } from './components/FullView'
@@ -20,6 +21,13 @@ import { useFind } from './app/useFind'
 import { useSearchIndex } from './search/useSearchIndex'
 import { FindProvider } from './search/FindContext'
 import { FindBar } from './components/FindBar'
+import { useAiBridge } from './app/ai-bridge/useAiBridge'
+import { useAiChat } from './ai/useAiChat'
+import { computeAiFocus } from './ai/focus'
+import { useAiActivity } from './ai/activity/useAiActivity'
+import { withActivity } from './ai/activity/tracker'
+import { AiActivityProvider } from './ai/activity/context'
+import { AiChatPanel } from './components/ai/AiChatPanel'
 
 const TOAST_MS = 4000
 
@@ -47,6 +55,27 @@ export default function App(): React.JSX.Element {
   const layout = useMemo(() => computeLayout(docs), [docs])
 
   const searchIndex = useSearchIndex(docs, elementState.elements)
+
+  const [aiOpen, setAiOpen] = useState(false)
+  const aiFocus = useMemo(
+    () => computeAiFocus(docs, collection.selected, fullViewState.hiddenPageId),
+    [docs, collection.selected, fullViewState.hiddenPageId]
+  )
+  const aiActivity = useAiActivity()
+  const { getOcrWords, ocrStatus } = searchIndex
+  const aiOcr = useMemo(() => ({ getOcrWords, ocrStatus }), [getOcrWords, ocrStatus])
+  const aiBridge = useAiBridge(collection, elementState, formState, markState, aiOcr, aiFocus)
+  const trackedAiBridge = useMemo(
+    () => withActivity(aiBridge, aiActivity.tracker),
+    [aiBridge, aiActivity.tracker]
+  )
+  const aiChat = useAiChat(trackedAiBridge)
+  const { busy: aiBusy } = aiChat
+  const { clear: clearAiActivity } = aiActivity
+  useEffect(() => {
+    if (!aiBusy) clearAiActivity()
+  }, [aiBusy, clearAiActivity])
+
   const find = useFind(searchIndex.search, searchIndex.version)
   const findState = useMemo(
     () => ({
@@ -86,21 +115,23 @@ export default function App(): React.JSX.Element {
   const { undo: popUndo, redo: popRedo } = undoStack
   const { applyUndo: applyMarkUndo, applyRedo: applyMarkRedo } = markState
   const { applyUndo: applyElementUndo, applyRedo: applyElementRedo } = elementState
-  const { placePageAt } = collection
+  const { placePageAt, applyPageSource } = collection
   const onUndo = useCallback(() => {
     const entry = popUndo()
     if (!entry) return
     if (entry.action === ACTIONS.MARK) applyMarkUndo(entry)
     else if (entry.action === ACTIONS.ELEMENT) applyElementUndo(entry)
+    else if (entry.action === ACTIONS.PAGE_SOURCE) applyPageSource(entry, 'undo')
     else flipPages(() => placePageAt(entry.payload.pageId, entry.payload.from))
-  }, [popUndo, applyMarkUndo, applyElementUndo, placePageAt])
+  }, [popUndo, applyMarkUndo, applyElementUndo, applyPageSource, placePageAt])
   const onRedo = useCallback(() => {
     const entry = popRedo()
     if (!entry) return
     if (entry.action === ACTIONS.MARK) applyMarkRedo(entry)
     else if (entry.action === ACTIONS.ELEMENT) applyElementRedo(entry)
+    else if (entry.action === ACTIONS.PAGE_SOURCE) applyPageSource(entry, 'redo')
     else flipPages(() => placePageAt(entry.payload.pageId, entry.payload.to))
-  }, [popRedo, applyMarkRedo, applyElementRedo, placePageAt])
+  }, [popRedo, applyMarkRedo, applyElementRedo, applyPageSource, placePageAt])
 
   useKeyboardShortcuts({
     active: !fullViewState.fullView,
@@ -144,97 +175,112 @@ export default function App(): React.JSX.Element {
 
   return (
     <FindProvider value={findState}>
-      <div
-        className={
-          'app' + (drag.committing ? ' committing' : '') + (drag.dragKind ? ' dragging' : '')
-        }
-        onDragEnter={drag.handlers.onDragEnter}
-        onDragOver={drag.handlers.onDragOver}
-        onDragLeave={drag.handlers.onDragLeave}
-        onDrop={drag.handlers.onDrop}
-      >
-        <Toolbar
-          documentCount={docs.length}
-          pageCount={totalPages}
-          busy={busy}
-          zoom={scale}
-          onZoomIn={() => canvasRef.current?.zoomIn()}
-          onZoomOut={() => canvasRef.current?.zoomOut()}
-          onZoomReset={() => canvasRef.current?.reset()}
-          onOpen={openViaDialog}
-          onExportPdf={() => exportCollection('pdf')}
-          onExportZip={exportZip}
-        />
-
-        {find.open && (
-          <FindBar
-            query={find.query}
-            result={find.result}
-            ocrRemaining={searchIndex.ocrRemaining}
-            hasScanned={searchIndex.hasScanned}
-            ocrLanguage={searchIndex.ocrLanguage}
-            onQuery={find.setQuery}
-            onOcrLanguage={searchIndex.setOcrLanguage}
-            onClose={find.closeFind}
+      <AiActivityProvider value={aiActivity.view}>
+        <div
+          className={
+            'app' + (drag.committing ? ' committing' : '') + (drag.dragKind ? ' dragging' : '')
+          }
+          onDragEnter={drag.handlers.onDragEnter}
+          onDragOver={drag.handlers.onDragOver}
+          onDragLeave={drag.handlers.onDragLeave}
+          onDrop={drag.handlers.onDrop}
+        >
+          <Toolbar
+            documentCount={docs.length}
+            pageCount={totalPages}
+            busy={busy}
+            zoom={scale}
+            aiOpen={aiOpen}
+            onZoomIn={() => canvasRef.current?.zoomIn()}
+            onZoomOut={() => canvasRef.current?.zoomOut()}
+            onZoomReset={() => canvasRef.current?.reset()}
+            onOpen={openViaDialog}
+            onExportPdf={() => exportCollection('pdf')}
+            onExportZip={exportZip}
+            onToggleAi={() => setAiOpen((open) => !open)}
           />
-        )}
 
-        <CollectionCanvas
-          docs={docs}
-          layout={layout}
-          busy={busy}
-          pagesDraggable={totalPages >= 2}
-          renderVersion={renderVersion}
-          selected={collection.selected}
-          hiddenPageId={fullViewState.hiddenPageId}
-          marks={markState.marks}
-          formValues={formState.values}
-          elements={elementState.elements}
-          dragKind={drag.dragKind}
-          draggingPage={drag.draggingPage}
-          dropTarget={drag.dropTarget}
-          collapsedId={drag.collapsedId}
-          externalCount={drag.externalCount}
-          canvasRef={canvasRef}
-          onScaleChange={onScaleChange}
-          onSettle={onSettle}
-          onBackgroundClick={collection.clearSelection}
-          onOpen={openViaDialog}
-          onSelectPage={collection.selectPage}
-          onOpenPage={fullViewState.openPage}
-          onPageDragStart={drag.startPageDrag}
-          onPageDragEnd={drag.clearDrag}
-          onAddPage={addPagesToDoc}
-          onMoveDoc={collection.moveDoc}
-          onRemoveDoc={collection.removeDoc}
-          onRenameDoc={collection.renameDoc}
-        />
+          {find.open && (
+            <FindBar
+              query={find.query}
+              result={find.result}
+              ocrRemaining={searchIndex.ocrRemaining}
+              hasScanned={searchIndex.hasScanned}
+              ocrLanguage={searchIndex.ocrLanguage}
+              onQuery={find.setQuery}
+              onOcrLanguage={searchIndex.setOcrLanguage}
+              onClose={find.closeFind}
+            />
+          )}
 
-        {fullView && fullViewDoc && (
-          <FullView
+          <CollectionCanvas
             docs={docs}
-            startDocId={fullView.docId}
-            startPageId={fullView.pageId}
-            originRect={fullView.originRect}
+            layout={layout}
+            busy={busy}
+            pagesDraggable={totalPages >= 2}
+            renderVersion={renderVersion}
+            selected={collection.selected}
+            hiddenPageId={fullViewState.hiddenPageId}
             marks={markState.marks}
-            onToggleMark={markState.toggleMark}
-            onRestoreMarks={markState.restoreMarks}
             formValues={formState.values}
-            onFieldChange={formState.setFieldValue}
             elements={elementState.elements}
-            onAddInk={elementState.addInk}
-            onAddText={elementState.addText}
-            onRemoveElement={elementState.removeElement}
-            onMoveElement={elementState.moveElement}
-            onToggleTextMark={elementState.toggleTextMark}
-            onUpdateText={elementState.updateText}
-            onActivePageChange={fullViewState.setHiddenPageId}
-            onClose={fullViewState.closeFullView}
+            dragKind={drag.dragKind}
+            draggingPage={drag.draggingPage}
+            dropTarget={drag.dropTarget}
+            collapsedId={drag.collapsedId}
+            externalCount={drag.externalCount}
+            canvasRef={canvasRef}
+            onScaleChange={onScaleChange}
+            onSettle={onSettle}
+            onBackgroundClick={collection.clearSelection}
+            onOpen={openViaDialog}
+            onSelectPage={collection.selectPage}
+            onOpenPage={fullViewState.openPage}
+            onPageDragStart={drag.startPageDrag}
+            onPageDragEnd={drag.clearDrag}
+            onAddPage={addPagesToDoc}
+            onMoveDoc={collection.moveDoc}
+            onRemoveDoc={collection.removeDoc}
+            onRenameDoc={collection.renameDoc}
           />
-        )}
 
-        {toast && <div className="toast">{toast}</div>}
-      </div>
+          {fullView && fullViewDoc && (
+            <FullView
+              docs={docs}
+              startDocId={fullView.docId}
+              startPageId={fullView.pageId}
+              originRect={fullView.originRect}
+              marks={markState.marks}
+              onToggleMark={markState.toggleMark}
+              onRestoreMarks={markState.restoreMarks}
+              formValues={formState.values}
+              onFieldChange={formState.setFieldValue}
+              elements={elementState.elements}
+              onAddInk={elementState.addInk}
+              onAddText={elementState.addText}
+              onRemoveElement={elementState.removeElement}
+              onMoveElement={elementState.moveElement}
+              onToggleTextMark={elementState.toggleTextMark}
+              onUpdateText={elementState.updateText}
+              onActivePageChange={fullViewState.setHiddenPageId}
+              onClose={fullViewState.closeFullView}
+            />
+          )}
+
+          <AnimatePresence>
+            {aiOpen && (
+              <AiChatPanel
+                messages={aiChat.messages}
+                busy={aiChat.busy}
+                onSend={aiChat.send}
+                onClose={() => setAiOpen(false)}
+              />
+            )}
+          </AnimatePresence>
+
+          {toast && <div className="toast">{toast}</div>}
+        </div>
+      </AiActivityProvider>
     </FindProvider>
   )
 }

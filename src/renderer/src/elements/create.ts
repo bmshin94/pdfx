@@ -42,7 +42,8 @@ export function createTextElement(
   origin: ElementPoint,
   number: number,
   pageWidth: number,
-  pageHeight: number
+  pageHeight: number,
+  fontSize: number = TEXT_FONT_SIZE
 ): TextElement | null {
   if (text.trim().length === 0) return null
   return {
@@ -50,11 +51,11 @@ export function createTextElement(
     kind: 'text',
     number,
     color: TEXT_COLOR,
-    fontSize: TEXT_FONT_SIZE,
+    fontSize,
     text,
     origin,
     marks: [],
-    bbox: textBbox(text, origin, TEXT_FONT_SIZE, pageWidth, pageHeight)
+    bbox: textBbox(text, origin, fontSize, pageWidth, pageHeight)
   }
 }
 

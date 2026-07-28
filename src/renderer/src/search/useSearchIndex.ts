@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createSearchEngine, type SearchEngine, type SearchResult } from './engine'
+import { createSearchEngine, type OcrStatus, type SearchEngine, type SearchResult } from './engine'
 import { normalizeText } from './normalize'
 import { DEFAULT_OCR_LANGUAGE } from '../ocr/languages'
 import type { OcrWord } from '../ocr/types'
@@ -16,6 +16,7 @@ export interface SearchIndex {
   ocrLanguage: string
   setOcrLanguage: (lang: string) => void
   getOcrWords: (sourceKey: string) => OcrWord[] | undefined
+  ocrStatus: (sourceKey: string) => OcrStatus
 }
 
 export function useSearchIndex(docs: DocEntry[], elements: ElementMap): SearchIndex {
@@ -65,6 +66,7 @@ export function useSearchIndex(docs: DocEntry[], elements: ElementMap): SearchIn
 
   const search = useCallback((query: string) => engine.search(query), [engine])
   const getOcrWords = useCallback((sourceKey: string) => engine.getOcrWords(sourceKey), [engine])
+  const ocrStatus = useCallback((sourceKey: string) => engine.ocrStatus(sourceKey), [engine])
 
   const setOcrLanguage = useCallback(
     (lang: string) => {
@@ -74,5 +76,14 @@ export function useSearchIndex(docs: DocEntry[], elements: ElementMap): SearchIn
     [engine]
   )
 
-  return { search, version, ocrRemaining, hasScanned, ocrLanguage, setOcrLanguage, getOcrWords }
+  return {
+    search,
+    version,
+    ocrRemaining,
+    hasScanned,
+    ocrLanguage,
+    setOcrLanguage,
+    getOcrWords,
+    ocrStatus
+  }
 }

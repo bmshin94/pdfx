@@ -1,6 +1,7 @@
 import type { PageEntry } from '../../types'
 import { PageView } from '../PageView'
 import { useFindState } from '../../search/FindContext'
+import { useAiActivePages, useAiFlashPages } from '../../ai/activity/context'
 import type { View } from './geometry'
 import { DOUBLE_CLICK_ZOOM, fitInto, TRANSITION_MS } from './geometry'
 import type { EditTool, Mark, MarkRect } from '../../edit/types'
@@ -53,6 +54,8 @@ export function FullViewPage(props: FullViewPageProps): React.JSX.Element {
 
   const { active, query, matchingPageIds, getOcrWords } = useFindState()
   const highlight = active && isCurrent && matchingPageIds.has(p.id)
+  const aiActive = useAiActivePages().has(p.id)
+  const aiFlash = useAiFlashPages().has(p.id)
 
   const size = fitInto(p.width, p.height, viewport)
   let style: React.CSSProperties = { width: size.w, height: size.h }
@@ -122,6 +125,8 @@ export function FullViewPage(props: FullViewPageProps): React.JSX.Element {
           />
         )}
         {marks && marks.length > 0 && <MarkLayer marks={marks} />}
+        {aiActive && <div className="ai-glow" />}
+        {aiFlash && <div className="ai-flash" />}
         {isCurrent && isMarkTool(selectTool) && (
           <SelectableTextLayer
             pdf={p.source.pdf}

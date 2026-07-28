@@ -1,28 +1,33 @@
-import { PDFDocument, StandardFonts } from 'pdf-lib'
-import type { PDFFont, PDFPage } from 'pdf-lib'
+import { PDFDocument } from 'pdf-lib'
+import type { PDFPage } from 'pdf-lib'
 
 import { MANIFEST_NAME, PDFX_VERSION } from './format'
 import { drawMarks } from './marks'
 import { drawElements, hasTextElements } from './elements'
+import { embedElementFonts } from './elements/fonts'
+import type { ElementFonts } from './elements/fonts'
 import { registerAcroForm } from './form-fields'
 import type { ExportDocument, ExportPage, PdfxManifest, RasterExportPage } from './format'
 
 interface BuildContext {
   output: PDFDocument
   sources: Map<string, PDFDocument>
-  font: PDFFont | null
+  fonts: ElementFonts | null
 }
 
 const createContext = (output: PDFDocument): BuildContext => ({
   output,
   sources: new Map(),
-  font: null
+  fonts: null
 })
 
-async function elementFont(ctx: BuildContext, page: ExportPage): Promise<PDFFont | undefined> {
+async function elementFonts(
+  ctx: BuildContext,
+  page: ExportPage
+): Promise<ElementFonts | undefined> {
   if (!hasTextElements(page.elements)) return undefined
-  if (!ctx.font) ctx.font = await ctx.output.embedFont(StandardFonts.Helvetica)
-  return ctx.font
+  ctx.fonts = await embedElementFonts(ctx.output, page.elements, ctx.fonts)
+  return ctx.fonts
 }
 
 async function addRasterPage(output: PDFDocument, page: RasterExportPage): Promise<PDFPage> {
@@ -33,10 +38,10 @@ async function addRasterPage(output: PDFDocument, page: RasterExportPage): Promi
 }
 
 async function addExportPage(ctx: BuildContext, page: ExportPage): Promise<void> {
-  const font = await elementFont(ctx, page)
+  const fonts = await elementFonts(ctx, page)
   if (page.kind === 'raster') {
     const added = await addRasterPage(ctx.output, page)
-    drawElements(added, page.elements, font)
+    drawElements(added, page.elements, fonts)
     return
   }
   let source = ctx.sources.get(page.sourceKey)
@@ -46,7 +51,7 @@ async function addExportPage(ctx: BuildContext, page: ExportPage): Promise<void>
   }
   const [copied] = await ctx.output.copyPages(source, [page.pageIndex])
   ctx.output.addPage(copied)
-  drawElements(copied, page.elements, font)
+  drawElements(copied, page.elements, fonts)
   drawMarks(copied, page.marks)
 }
 

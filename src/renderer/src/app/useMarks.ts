@@ -10,6 +10,17 @@ export function useMarks(pushUndo: (entry: UndoEntry) => void) {
   const marksRef = useRef(marks)
   marksRef.current = marks
 
+  const addMark = useCallback(
+    (pageId: string, kind: MarkKind, rects: MarkRect[]) => {
+      if (rects.length === 0) return
+      const map = marksRef.current
+      const added = { id: crypto.randomUUID(), kind, color: DEFAULT_MARK_COLORS[kind], rects }
+      pushUndo({ action: ACTIONS.MARK, value: 'add', payload: { pageId, marks: [added] } })
+      setMarks({ ...map, [pageId]: [...(map[pageId] ?? []), added] })
+    },
+    [pushUndo]
+  )
+
   const toggleMark = useCallback(
     (pageId: string, kind: MarkKind, rects: MarkRect[]) => {
       if (rects.length === 0) return
@@ -22,10 +33,21 @@ export function useMarks(pushUndo: (entry: UndoEntry) => void) {
         pushUndo({ action: ACTIONS.MARK, value: 'remove', payload: { pageId, marks: removed } })
         setMarks({ ...map, [pageId]: page.filter((m) => !removed.includes(m)) })
       } else {
-        const added = { id: crypto.randomUUID(), kind, color: DEFAULT_MARK_COLORS[kind], rects }
-        pushUndo({ action: ACTIONS.MARK, value: 'add', payload: { pageId, marks: [added] } })
-        setMarks({ ...map, [pageId]: [...page, added] })
+        addMark(pageId, kind, rects)
       }
+    },
+    [pushUndo, addMark]
+  )
+
+  const clearMarks = useCallback(
+    (pageId: string, kind: MarkKind): number => {
+      const map = marksRef.current
+      const page = map[pageId] ?? []
+      const removed = page.filter((m) => m.kind === kind)
+      if (removed.length === 0) return 0
+      pushUndo({ action: ACTIONS.MARK, value: 'remove', payload: { pageId, marks: removed } })
+      setMarks({ ...map, [pageId]: page.filter((m) => m.kind !== kind) })
+      return removed.length
     },
     [pushUndo]
   )
@@ -56,7 +78,7 @@ export function useMarks(pushUndo: (entry: UndoEntry) => void) {
   const applyUndo = useCallback((entry: MarkUndoEntry) => applyEntry(entry, 'undo'), [applyEntry])
   const applyRedo = useCallback((entry: MarkUndoEntry) => applyEntry(entry, 'redo'), [applyEntry])
 
-  return { marks, toggleMark, restoreMarks, applyUndo, applyRedo }
+  return { marks, addMark, toggleMark, clearMarks, restoreMarks, applyUndo, applyRedo }
 }
 
 export type MarkState = ReturnType<typeof useMarks>

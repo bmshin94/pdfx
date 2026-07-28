@@ -20,12 +20,15 @@ export const EMPTY_RESULT: SearchResult = {
   occurrences: 0
 }
 
+export type OcrStatus = 'done' | 'pending' | 'none' | 'unknown'
+
 export interface SearchEngine {
   reconcile: (docs: DocEntry[]) => void
   search: (query: string) => SearchResult
   setElementTexts: (byPage: Map<string, string>) => void
   setLanguage: (lang: string) => void
   getOcrWords: (sourceKey: string) => OcrWord[] | undefined
+  ocrStatus: (sourceKey: string) => OcrStatus
   dispose: () => void
 }
 
@@ -49,6 +52,7 @@ export function createSearchEngine({
   getDocs
 }: EngineCallbacks): SearchEngine {
   const pageText = new Map<string, string>()
+  const keyByPage = new Map<string, string>()
   const elementText = new Map<string, string>()
   const sourceBorn = new Map<string, string>()
   const sourceOcr = new Map<string, string>()
@@ -173,7 +177,9 @@ export function createSearchEngine({
           if (!sourceRef.has(key)) {
             sourceRef.set(key, { key, pdf: page.source.pdf, pageIndex: page.pageIndex })
           }
-          if (pageText.has(page.id)) continue
+          const priorKey = keyByPage.get(page.id)
+          keyByPage.set(page.id, key)
+          if (pageText.has(page.id) && priorKey === key) continue
           if (sourceBorn.has(key)) {
             pageText.set(page.id, effective(key))
             changed = true
@@ -194,6 +200,7 @@ export function createSearchEngine({
       for (const id of [...pageText.keys()]) {
         if (!presentPages.has(id)) {
           pageText.delete(id)
+          keyByPage.delete(id)
           changed = true
         }
       }
@@ -289,6 +296,12 @@ export function createSearchEngine({
 
     getOcrWords(sourceKey) {
       return sourceOcrWords.get(sourceKey)
+    },
+
+    ocrStatus(sourceKey) {
+      if (sourceOcrWords.has(sourceKey)) return 'done'
+      if (scanned.has(sourceKey)) return 'pending'
+      return sourceBorn.has(sourceKey) ? 'none' : 'unknown'
     },
 
     dispose() {

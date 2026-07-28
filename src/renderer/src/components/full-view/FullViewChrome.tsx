@@ -80,7 +80,7 @@ export function FullViewChrome({
               Edit
             </button>
           )}
-          <button className="icon-btn" title="Close (Esc)" onClick={runClose}>
+          <button className="btn glass square" title="Close (Esc)" onClick={runClose}>
             <CloseIcon size={16} />
           </button>
         </div>

@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { useAiActivePages, useAiFlashPages } from '../ai/activity/context'
 import type { PageEntry } from '../types'
 import type { OcrWord } from '../ocr/types'
 import type { Mark } from '../edit/types'
@@ -55,6 +56,8 @@ function PageCellImpl({
   onPageDragStart,
   onPageDragEnd
 }: PageCellProps): React.JSX.Element {
+  const aiActive = useAiActivePages().has(page.id)
+  const aiFlash = useAiFlashPages().has(page.id)
   return (
     <div
       data-page-id={page.id}
@@ -62,7 +65,8 @@ function PageCellImpl({
         'page' +
         (selected ? ' selected' : '') +
         (collapsed ? ' collapsing' : '') +
-        (dimmed ? ' dimmed' : '')
+        (dimmed ? ' dimmed' : '') +
+        (aiActive ? ' ai-active' : '')
       }
       style={
         collapsed
@@ -129,6 +133,8 @@ function PageCellImpl({
         />
       )}
       {marks && marks.length > 0 && <MarkLayer marks={marks} />}
+      {aiActive && <div className="ai-glow" />}
+      {aiFlash && <div className="ai-flash" />}
       <span className="page-number">{visibleNumber}</span>
     </div>
   )

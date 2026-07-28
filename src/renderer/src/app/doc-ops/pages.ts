@@ -1,6 +1,20 @@
 import { uniqueDocName } from '../names'
 import type { DocEntry, PageEntry } from '../../types'
 import type { PageRef } from '../types'
+import type { PageSourceSwap } from '../undo'
+
+export function swapPageSource(docs: DocEntry[], pageId: string, swap: PageSourceSwap): DocEntry[] {
+  return docs.map((doc) =>
+    doc.pages.some((p) => p.id === pageId)
+      ? {
+          ...doc,
+          pages: doc.pages.map((p) =>
+            p.id === pageId ? { ...p, source: swap.source, pageIndex: swap.pageIndex } : p
+          )
+        }
+      : doc
+  )
+}
 
 export function insertPastedPage(
   docs: DocEntry[],

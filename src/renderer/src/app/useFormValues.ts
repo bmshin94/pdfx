@@ -12,7 +12,7 @@ export function useFormValues() {
     setValues({ ...map, [sourceId]: { ...source, [fieldName]: value } })
   }, [])
 
-  return { values, setFieldValue }
+  return { values, valuesRef, setFieldValue }
 }
 
 export type FormState = ReturnType<typeof useFormValues>

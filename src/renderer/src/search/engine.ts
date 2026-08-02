@@ -71,7 +71,7 @@ export function createSearchEngine({
 
   const sourceKeyOf = (page: DocEntry['pages'][number]): string =>
     `${page.source.id}:${page.pageIndex}`
-  const effective = (key: string): string => sourceOcr.get(key) ?? sourceBorn.get(key) ?? ''
+  const effective = (key: string): string => sourceBorn.get(key) || sourceOcr.get(key) || ''
   const reportProgress = (): void => onProgress(ocrQueue.length + ocrInFlight, scanned.size > 0)
 
   function ensureClient(): OcrClient {
@@ -295,6 +295,7 @@ export function createSearchEngine({
     },
 
     getOcrWords(sourceKey) {
+      if (sourceBorn.get(sourceKey)) return undefined
       return sourceOcrWords.get(sourceKey)
     },
 

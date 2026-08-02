@@ -6,8 +6,6 @@ export interface ExtractedPage {
   needsOcr: boolean
 }
 
-const MIN_TEXT_CHARS = 16
-
 const IMAGE_OPS = new Set<number>([
   OPS.paintImageXObject,
   OPS.paintImageXObjectRepeat,
@@ -42,6 +40,6 @@ export async function extractPageText(
     }
   }
 
-  const needsOcr = chars < MIN_TEXT_CHARS ? await paintsRasterImage(page) : false
+  const needsOcr = chars === 0 ? await paintsRasterImage(page) : false
   return { text, needsOcr }
 }

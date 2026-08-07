@@ -8,6 +8,7 @@ interface ToolbarProps {
   busy: boolean
   zoom: number
   aiOpen: boolean
+  aiEnabled: boolean
   onZoomIn: () => void
   onZoomOut: () => void
   onZoomReset: () => void
@@ -25,6 +26,7 @@ export function Toolbar({
   busy,
   zoom,
   aiOpen,
+  aiEnabled,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -100,13 +102,15 @@ export function Toolbar({
           {stars && <span className="star-count">{stars}</span>}
         </a>
       )}
-      <button
-        className={`btn glass square ai-btn${aiOpen ? ' active' : ''}`}
-        title="AI assistant"
-        onClick={onToggleAi}
-      >
-        <BoltIcon size={18} />
-      </button>
+      {aiEnabled && (
+        <button
+          className={`btn glass square ai-btn${aiOpen ? ' active' : ''}`}
+          title="AI assistant"
+          onClick={onToggleAi}
+        >
+          <BoltIcon size={18} />
+        </button>
+      )}
     </header>
   )
 }

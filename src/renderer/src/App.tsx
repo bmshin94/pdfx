@@ -23,6 +23,7 @@ import { FindProvider } from './search/FindContext'
 import { FindBar } from './components/FindBar'
 import { useAiBridge } from './app/ai-bridge/useAiBridge'
 import { useAiChat } from './ai/useAiChat'
+import { resolveAiConfig } from './ai/provider'
 import { computeAiFocus } from './ai/focus'
 import { useAiActivity } from './ai/activity/useAiActivity'
 import { withActivity } from './ai/activity/tracker'
@@ -57,6 +58,7 @@ export default function App(): React.JSX.Element {
   const searchIndex = useSearchIndex(docs, elementState.elements)
 
   const [aiOpen, setAiOpen] = useState(false)
+  const aiEnabled = useMemo(() => resolveAiConfig().ready, [])
   const aiFocus = useMemo(
     () => computeAiFocus(docs, collection.selected, fullViewState.hiddenPageId),
     [docs, collection.selected, fullViewState.hiddenPageId]
@@ -191,6 +193,7 @@ export default function App(): React.JSX.Element {
             busy={busy}
             zoom={scale}
             aiOpen={aiOpen}
+            aiEnabled={aiEnabled}
             onZoomIn={() => canvasRef.current?.zoomIn()}
             onZoomOut={() => canvasRef.current?.zoomOut()}
             onZoomReset={() => canvasRef.current?.reset()}

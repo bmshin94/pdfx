@@ -223,6 +223,7 @@ a.btn {
   justify-content: center;
   height: 38px;
   font-size: 14px;
+  line-height: 100%;
   border-radius: 999px;
   color: var(--ink);
   background: transparent;
